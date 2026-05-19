@@ -1,60 +1,87 @@
-# Zabbix Migrador — 7.2 para 7.4
+<div align="center">
 
-Migração automática entre servidores Zabbix. O mesmo comando é executado em ambas as máquinas — o script deteta a versão instalada e executa a recolha ou o restore conforme o caso.
+# Zabbix Migrador
+
+### Migração automática de Zabbix 7.2 para 7.4
+
+![Shell](https://img.shields.io/badge/Shell-Bash-4EAA25?style=flat-square&logo=gnubash&logoColor=white)
+![Zabbix](https://img.shields.io/badge/Zabbix-7.2_→_7.4-D40000?style=flat-square&logo=zabbix&logoColor=white)
+![Root](https://img.shields.io/badge/Requer-root-critical?style=flat-square)
+![License](https://img.shields.io/badge/Uso-Interno-blue?style=flat-square)
+
+</div>
 
 ---
 
-## Requisitos
+## Como funciona
 
-- Executar como `root` em ambos os servidores
-- Zabbix instalado com `/etc/zabbix/zabbix_server.conf` presente em cada máquina
-- Acesso SSH (porta 22) do servidor 7.2 para o servidor 7.4
+Um único comando executado em cada servidor. O script deteta automaticamente a versão do Zabbix instalada e decide se executa a **recolha** (7.2) ou o **restore** (7.4).
 
 ---
 
 ## Execução
 
-O mesmo comando nas duas máquinas, pela ordem indicada:
+> Executar como `root` em ambos os servidores, pela ordem indicada.
 
-**No servidor 7.2:**
+**`PASSO 1` — Servidor de origem (Zabbix 7.2)**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/muser123456/runmigracao/main/zabbix_migrador.sh | bash
 ```
-No final da recolha, o script pede o IP do servidor 7.4 e transfere o pacote automaticamente.
 
-**No servidor 7.4:**
+O script recolhe todos os dados, comprime num pacote e pede o IP do servidor 7.4 para transferir automaticamente via `scp`.
+
+**`PASSO 2` — Servidor de destino (Zabbix 7.4)**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/muser123456/runmigracao/main/zabbix_migrador.sh | bash
 ```
-O script localiza o pacote em `/root/`, faz o restore completo e apresenta o link de acesso no final.
+
+O script localiza o pacote em `/root/`, executa o restore completo e apresenta o endereço de acesso no final.
 
 ---
 
 ## O que é migrado
 
-- Base de dados completa (MySQL/MariaDB ou PostgreSQL)
-- Configurações de `/etc/zabbix/`
-- Scripts de alerta e externos de `/usr/lib/zabbix/`
-- Certificados SSL e chaves PSK de `/var/lib/zabbix/`
-- Módulos de frontend
+| Componente | Origem |
+|---|---|
+| Base de dados | MySQL/MariaDB ou PostgreSQL via `zabbix_server.conf` |
+| Configurações | `/etc/zabbix/` |
+| Scripts | `/usr/lib/zabbix/alertscripts` e `externalscripts` |
+| Certificados e PSK | `/var/lib/zabbix/ssl` e `enc` |
+| Módulos frontend | `/usr/share/zabbix/modules` |
+
+---
+
+## Requisitos
+
+| | |
+|---|---|
+| Permissões | `root` em ambos os servidores |
+| Zabbix | Instalado com `zabbix_server.conf` presente em cada máquina |
+| Conectividade | Acesso SSH porta `22` do servidor 7.2 para o 7.4 |
+| `curl` | Disponível em ambos os servidores |
 
 ---
 
 ## Após a migração
 
-Abrir no browser: `http://<IP_DO_7.4>/zabbix`
+Aceder no browser:
 
-O Zabbix 7.4 faz o upgrade do schema da base de dados automaticamente ao arrancar.
+```
+http://<IP_DO_SERVIDOR_7.4>/zabbix
+```
 
-Para acompanhar o arranque:
+O Zabbix 7.4 realiza o upgrade do schema da base de dados automaticamente ao arrancar. Para acompanhar:
+
 ```bash
 tail -f /var/log/zabbix/zabbix_server.log
 ```
 
 ---
 
-## Notas
+<div align="center">
 
-- O script cria um backup do estado atual do servidor 7.4 em `/root/zabbix_74_backup_<data>/` antes de qualquer alteração.
-- Se a versão do Zabbix não for 7.2 nem 7.4, o script pergunta manualmente qual o papel da máquina.
-- Se preferir transferir o pacote manualmente, deixe o campo de IP em branco e execute depois: `scp /root/zabbix_clone_*.tar.gz root@<IP_7.4>:/root/`
+> **Segurança** — Antes de qualquer alteração, o script cria automaticamente um backup do servidor 7.4 em `/root/zabbix_74_backup_<data>/`
+
+</div>
